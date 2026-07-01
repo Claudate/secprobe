@@ -125,17 +125,38 @@ secprobe scan . -f html -o audit-report.html
 secprobe scan . -f json -o results.json --min-severity medium
 ```
 
+## 桌面应用
+
+SecProbe 提供基于 **Tauri 2** 的跨平台桌面应用（Windows / macOS / Linux）——拖入或选择文件夹即可扫描，在深色安全主题界面中可视化浏览漏洞。
+
+```bash
+# 前置：Tauri CLI v2
+cargo install tauri-cli --version "^2"
+
+# 开发模式运行
+cargo tauri dev
+
+# 构建生产安装包（.app / .dmg / .msi / .deb / .AppImage）
+cargo tauri build
+```
+
+**亮点：** 原生文件夹选择 + 系统级拖放、实时严重度过滤、可展开的漏洞卡片（代码片段 + CWE/OWASP 标签 + 修复建议）、一键导出 JSON / HTML 报告。
+
 ## 项目结构
 
 ```
 SecProbe
-├── src/
-│   ├── main.rs       — CLI 入口 (clap)
-│   ├── types.rs      — 核心数据结构
-│   ├── rules.rs      — 13 条安全规则（含 CWE/OWASP 映射）
-│   ├── scanner.rs    — 并行文件扫描器 (rayon + walkdir)
-│   └── report.rs     — 终端 / JSON / HTML 报告生成器
-└── Cargo.toml
+├── src/                  — Rust 核心（共享库 + CLI）
+│   ├── main.rs           — CLI 入口 (clap)
+│   ├── lib.rs            — 库 crate 根 (secprobe_core)
+│   ├── types.rs          — 核心数据结构
+│   ├── rules.rs          — 28 条安全规则（含 CWE/OWASP 映射）
+│   ├── scanner.rs        — 并行文件扫描器 (rayon + walkdir)
+│   ├── llm.rs            — 可选 LLM 深度分析 (OpenAI/Anthropic/DeepSeek)
+│   └── report.rs         — 终端 / JSON / HTML 报告生成器
+├── src-tauri/            — Tauri 2 桌面后端（Rust 命令）
+├── src-ui/               — 桌面前端（HTML / CSS / JS，深色主题）
+└── Cargo.toml            — Cargo workspace（核心 + 桌面）
 ```
 
 ## 发展路线
@@ -144,7 +165,7 @@ SecProbe
 - [ ] 跨文件数据流追踪（污点分析）
 - [ ] LLM 增强深度分析（可选，用于复杂模式）
 - [ ] SARIF 输出（GitHub/GitLab 安全标签集成）
-- [ ] Tauri 桌面应用（可视化仪表盘）
+- [x] Tauri 桌面应用（可视化仪表盘）
 - [ ] VS Code 插件（实时扫描）
 
 ## 许可证

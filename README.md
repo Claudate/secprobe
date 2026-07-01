@@ -125,17 +125,38 @@ secprobe scan . -f html -o audit-report.html
 secprobe scan . -f json -o results.json --min-severity medium
 ```
 
+## Desktop App
+
+SecProbe ships a cross-platform desktop app (Windows / macOS / Linux) built with **Tauri 2** — pick or drag in a folder, scan, and browse findings visually in a dark, security-themed UI.
+
+```bash
+# Prerequisite: Tauri CLI v2
+cargo install tauri-cli --version "^2"
+
+# Run in dev mode
+cargo tauri dev
+
+# Build a production bundle (.app / .dmg / .msi / .deb / .AppImage)
+cargo tauri build
+```
+
+**Highlights:** native folder picker & OS-level drag-and-drop, live severity filtering, expandable finding cards (code snippet + CWE/OWASP tags + fix suggestion), and one-click JSON / HTML report export.
+
 ## Architecture
 
 ```
 SecProbe
-├── src/
-│   ├── main.rs       — CLI entry (clap)
-│   ├── types.rs      — Core data structures
-│   ├── rules.rs      — 13 security rules with CWE/OWASP mapping
-│   ├── scanner.rs    — Parallel file scanner (rayon + walkdir)
-│   └── report.rs     — Terminal / JSON / HTML report generators
-└── Cargo.toml
+├── src/                  — Rust core (shared library + CLI)
+│   ├── main.rs           — CLI entry (clap)
+│   ├── lib.rs            — Library crate root (secprobe_core)
+│   ├── types.rs          — Core data structures
+│   ├── rules.rs          — 28 security rules with CWE/OWASP mapping
+│   ├── scanner.rs        — Parallel file scanner (rayon + walkdir)
+│   ├── llm.rs            — Optional LLM deep analysis (OpenAI/Anthropic/DeepSeek)
+│   └── report.rs         — Terminal / JSON / HTML report generators
+├── src-tauri/            — Tauri 2 desktop backend (Rust commands)
+├── src-ui/               — Desktop frontend (HTML / CSS / JS, dark theme)
+└── Cargo.toml            — Cargo workspace (core + desktop)
 ```
 
 ## Roadmap
@@ -144,7 +165,7 @@ SecProbe
 - [ ] Cross-file data flow tracking (taint analysis)
 - [ ] LLM-enhanced deep analysis (optional, for complex patterns)
 - [ ] SARIF output (GitHub/GitLab security tab integration)
-- [ ] Tauri desktop app with visual dashboard
+- [x] Tauri desktop app with visual dashboard
 - [ ] VS Code extension for real-time scanning
 
 ## License
