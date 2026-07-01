@@ -1,0 +1,16 @@
+[package]
+name = "secprobe"
+version = "0.1.0"
+edition = "2024"
+description = "AI-powered security audit tool — fast, offline, cross-platform"
+license = "MIT"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+walkdir = "2"
+regex = "1"
+colored = "3"
+rayon = "1"
+chrono = { version = "0.4", features = ["serde"] }
