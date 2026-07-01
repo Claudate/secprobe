@@ -53,7 +53,7 @@ cargo build --release
 
 ## Features
 
-### 25 Security Rules (OWASP Top 10 Coverage)
+### 28 Security Rules (OWASP Top 10 Coverage)
 
 | ID | Vulnerability | CWE | Severity | Languages |
 |---|---|---|---|---|
