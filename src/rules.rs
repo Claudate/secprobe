@@ -93,7 +93,7 @@ pub fn all_rules() -> Vec<Rule> {
             cwe_id: Some("CWE-22"),
             owasp: Some("A01:2021-Broken Access Control"),
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
-            pattern: r"(?:readFile|writeFile|readFileSync|createReadStream|open)\s*\(.*(?:req\.|params\.|query\.|body\.)|(?:\.\.\/|\.\.\\)",
+            pattern: r"(?:readFile|writeFile|readFileSync|createReadStream|open)\s*\(.*(?:req\.|params\.|query\.|body\.)",
             fix_suggestion: "使用 path.resolve 验证路径，确保在允许的目录范围内",
             fix_example: Some("const safePath = path.resolve(baseDir, userInput);\nif (!safePath.startsWith(baseDir)) throw new Error('路径越界');"),
         },
