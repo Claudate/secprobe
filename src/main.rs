@@ -1,13 +1,8 @@
-mod llm;
-mod report;
-mod rules;
-mod scanner;
-mod types;
-
 use std::fs;
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use secprobe_core::{llm, report, rules, scanner, types};
 
 #[derive(Parser)]
 #[command(

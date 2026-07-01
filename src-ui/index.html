@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SecProbe</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <circle cx="14" cy="14" r="13" stroke="#38bdf8" stroke-width="2"/>
+          <path d="M14 6 L14 16 M10 12 L14 16 L18 12" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="14" cy="21" r="1.5" fill="#38bdf8"/>
+        </svg>
+        <span class="logo-text">SecProbe</span>
+      </div>
+      <span class="version">v0.1.0</span>
+    </header>
+
+    <main class="main">
+      <aside class="sidebar">
+        <div class="scan-panel">
+          <h2>Scan Project</h2>
+          <div id="dropzone" class="dropzone">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect x="4" y="8" width="32" height="24" rx="3" stroke="#64748b" stroke-width="2"/>
+              <path d="M20 14 V26 M14 20 L20 14 L26 20" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <p>Drop folder here</p>
+            <p class="dropzone-sub">or click to browse</p>
+          </div>
+          <div id="selectedPath" class="selected-path" style="display:none;">
+            <span id="pathText"></span>
+            <button id="clearPath" class="btn-icon" title="Clear">
+              <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3L11 11M11 3L3 11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+
+          <div class="scan-options">
+            <label>Min Severity</label>
+            <select id="minSeverity">
+              <option value="low" selected>Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+          </div>
+
+          <button id="scanBtn" class="btn-primary" disabled>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="2"/><path d="M11 11L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Start Scan</span>
+          </button>
+        </div>
+
+        <div id="summaryPanel" class="summary-panel" style="display:none;">
+          <h2>Summary</h2>
+          <div class="stats-grid">
+            <div class="stat-card critical"><span id="critCount" class="stat-num">0</span><span class="stat-label">Critical</span></div>
+            <div class="stat-card high"><span id="highCount" class="stat-num">0</span><span class="stat-label">High</span></div>
+            <div class="stat-card medium"><span id="medCount" class="stat-num">0</span><span class="stat-label">Medium</span></div>
+            <div class="stat-card low"><span id="lowCount" class="stat-num">0</span><span class="stat-label">Low</span></div>
+          </div>
+          <div class="scan-meta">
+            <p><span id="fileCount">0</span> files scanned</p>
+            <p><span id="scanTime">0</span>ms</p>
+          </div>
+          <div class="export-btns">
+            <button id="exportJson" class="btn-secondary">Export JSON</button>
+            <button id="exportHtml" class="btn-secondary">Export HTML</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div id="welcome" class="welcome">
+          <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="28" stroke="#1e293b" stroke-width="2"/>
+            <path d="M32 16V40M22 30L32 40L42 30" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <h3>Select a project to scan</h3>
+          <p>Drop a folder or use the browse button</p>
+        </div>
+
+        <div id="scanning" class="scanning" style="display:none;">
+          <div class="spinner"></div>
+          <p>Scanning...</p>
+        </div>
+
+        <div id="results" class="results" style="display:none;">
+          <div class="results-header">
+            <h2>Findings</h2>
+            <div class="filter-bar">
+              <button class="filter-btn active" data-severity="all">All</button>
+              <button class="filter-btn" data-severity="CRITICAL">Critical</button>
+              <button class="filter-btn" data-severity="HIGH">High</button>
+              <button class="filter-btn" data-severity="MEDIUM">Medium</button>
+              <button class="filter-btn" data-severity="LOW">Low</button>
+            </div>
+          </div>
+          <div id="findingsList" class="findings-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
