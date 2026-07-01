@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  test:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        run: cargo build --release --verbose
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Format check
+        run: cargo fmt --check
+
+  self-scan:
+    name: SecProbe Self-Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build SecProbe
+        run: cargo build --release
+
+      - name: Scan own source with SARIF output
+        run: ./target/release/secprobe scan ./src -f sarif -o secprobe.sarif || true
+
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: secprobe.sarif
+        continue-on-error: true

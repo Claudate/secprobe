@@ -1,0 +1,158 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ── 桌面应用 (Tauri)：Windows .msi/.exe · macOS arm64/x64 .dmg · Linux .deb/.AppImage ──
+  desktop:
+    name: Desktop ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            label: macOS-arm64
+            args: '--target aarch64-apple-darwin'
+            targets: aarch64-apple-darwin
+          - platform: macos-latest
+            label: macOS-x64
+            args: '--target x86_64-apple-darwin'
+            targets: x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            label: Linux-x64
+            args: '--bundles deb,appimage'
+            targets: ''
+          - platform: windows-latest
+            label: Windows-x64
+            args: ''
+            targets: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libfuse2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.targets }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          cache-on-failure: true
+
+      - name: Build & publish desktop app
+        uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: 'SecProbe ${{ github.ref_name }}'
+          releaseBody: |
+            ## SecProbe — AI 安全审计工具 / AI Security Audit Tool
+
+            ### 桌面应用 · Desktop App
+            | 平台 Platform | 安装包 Installer |
+            | --- | --- |
+            | Windows x64 | `SecProbe_*_x64-setup.exe` (NSIS) · `SecProbe_*_x64_en-US.msi` (WiX) |
+            | macOS Apple Silicon | `SecProbe_*_aarch64.dmg` |
+            | macOS Intel | `SecProbe_*_x64.dmg` |
+            | Linux x64 | `secprobe_*_amd64.deb` · `SecProbe_*_amd64.AppImage` |
+
+            ### 命令行 · CLI
+            见下方 `secprobe-<os>-<arch>` 资源 / See the `secprobe-<os>-<arch>` assets below.
+
+            ---
+            > **macOS 未签名首次打开** / unsigned first launch:
+            > 右键 App → 打开(Open)，或终端执行 `xattr -cr /Applications/SecProbe.app`
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+  # ── 命令行二进制 (CLI)：随同一 Release 发布 ──
+  cli:
+    name: CLI ${{ matrix.label }}
+    needs: desktop
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            label: macOS-arm64
+            target: aarch64-apple-darwin
+            bin: secprobe
+            archive: secprobe-macos-aarch64.tar.gz
+          - platform: macos-latest
+            label: macOS-x64
+            target: x86_64-apple-darwin
+            bin: secprobe
+            archive: secprobe-macos-x86_64.tar.gz
+          - platform: ubuntu-22.04
+            label: Linux-x64
+            target: x86_64-unknown-linux-gnu
+            bin: secprobe
+            archive: secprobe-linux-x86_64.tar.gz
+          - platform: windows-latest
+            label: Windows-x64
+            target: x86_64-pc-windows-msvc
+            bin: secprobe.exe
+            archive: secprobe-windows-x86_64.zip
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          cache-on-failure: true
+
+      - name: Build CLI binary
+        run: cargo build --release --locked --target ${{ matrix.target }} --bin secprobe
+
+      - name: Package (Unix)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          tar czf ../../../${{ matrix.archive }} ${{ matrix.bin }}
+
+      - name: Package (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          cd target/${{ matrix.target }}/release
+          7z a ../../../${{ matrix.archive }} ${{ matrix.bin }}
+
+      - name: Upload CLI to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: ${{ matrix.archive }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
