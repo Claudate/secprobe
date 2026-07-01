@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -14,27 +17,27 @@ jobs:
     name: Test & Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          workspaces: '. -> target'
+          cache-on-failure: true
 
+      # secprobe is the workspace root package, so cargo build/clippy/test here
+      # target only the CLI crate (not the Tauri desktop crate, which needs
+      # platform GUI libs). Desktop builds are covered by the Release workflow.
       - name: Build
-        run: cargo build --release --verbose
+        run: cargo build --release --locked --verbose
 
       - name: Run tests
-        run: cargo test --verbose
+        run: cargo test --locked --verbose
 
       - name: Clippy
         run: cargo clippy -- -D warnings
@@ -45,20 +48,29 @@ jobs:
   self-scan:
     name: SecProbe Self-Scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build SecProbe
-        run: cargo build --release
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: '. -> target'
+          cache-on-failure: true
+
+      - name: Build SecProbe CLI
+        run: cargo build --release --locked --bin secprobe
 
       - name: Scan own source with SARIF output
         run: ./target/release/secprobe scan ./src -f sarif -o secprobe.sarif || true
 
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: secprobe.sarif
         continue-on-error: true
