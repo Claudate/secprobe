@@ -91,6 +91,7 @@ cargo build --release
 - **Terminal** — Colorized output with code snippets and fix suggestions
 - **HTML** — Dark-themed professional report, auto-opens in browser
 - **JSON** — Machine-readable for CI/CD pipeline integration
+- **SARIF 2.1.0** — GitHub/GitLab security tab integration
 
 ### Performance
 

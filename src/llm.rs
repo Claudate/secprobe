@@ -63,10 +63,7 @@ impl LlmConfig {
     fn api_url(&self) -> String {
         match self.provider {
             LlmProvider::OpenAI | LlmProvider::DeepSeek | LlmProvider::Custom => {
-                let base = self
-                    .base_url
-                    .as_deref()
-                    .unwrap_or("https://api.openai.com");
+                let base = self.base_url.as_deref().unwrap_or("https://api.openai.com");
                 format!("{base}/v1/chat/completions")
             }
             LlmProvider::Anthropic => "https://api.anthropic.com/v1/messages".into(),
@@ -147,8 +144,10 @@ fn call_openai_compatible(config: &LlmConfig, prompt: &str) -> Result<String, St
         .send_json(&body)
         .map_err(|e| format!("HTTP error: {e}"))?;
 
-    let json: serde_json::Value =
-        resp.body_mut().read_json().map_err(|e| format!("JSON parse error: {e}"))?;
+    let json: serde_json::Value = resp
+        .body_mut()
+        .read_json()
+        .map_err(|e| format!("JSON parse error: {e}"))?;
 
     json["choices"][0]["message"]["content"]
         .as_str()
@@ -174,8 +173,10 @@ fn call_anthropic(config: &LlmConfig, prompt: &str) -> Result<String, String> {
         .send_json(&body)
         .map_err(|e| format!("HTTP error: {e}"))?;
 
-    let json: serde_json::Value =
-        resp.body_mut().read_json().map_err(|e| format!("JSON parse error: {e}"))?;
+    let json: serde_json::Value = resp
+        .body_mut()
+        .read_json()
+        .map_err(|e| format!("JSON parse error: {e}"))?;
 
     json["content"][0]["text"]
         .as_str()
@@ -206,10 +207,7 @@ fn parse_llm_response(finding_id: &str, raw: &str) -> DeepAnalysis {
                 .unwrap_or("unknown")
                 .to_string(),
             impact: v["impact"].as_str().unwrap_or("unknown").to_string(),
-            attack_scenario: v["attack_scenario"]
-                .as_str()
-                .unwrap_or("N/A")
-                .to_string(),
+            attack_scenario: v["attack_scenario"].as_str().unwrap_or("N/A").to_string(),
             detailed_fix: v["detailed_fix"].as_str().unwrap_or("N/A").to_string(),
             confidence_adjustment: v["confidence"].as_f64().unwrap_or(0.5),
             is_false_positive: v["is_false_positive"].as_bool().unwrap_or(false),

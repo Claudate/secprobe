@@ -43,7 +43,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "使用参数化查询：cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))",
             fix_example: Some("cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))"),
         },
-
         // XSS
         Rule {
             id: "SEC-010",
@@ -55,9 +54,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript],
             pattern: r"\.innerHTML\s*=|dangerouslySetInnerHTML|document\.write\s*\(",
             fix_suggestion: "使用 textContent 替代 innerHTML，或使用 DOMPurify 净化 HTML",
-            fix_example: Some("element.textContent = userInput; // 安全\n// 或使用 DOMPurify: element.innerHTML = DOMPurify.sanitize(userInput);"),
+            fix_example: Some(
+                "element.textContent = userInput; // 安全\n// 或使用 DOMPurify: element.innerHTML = DOMPurify.sanitize(userInput);",
+            ),
         },
-
         // Command Injection
         Rule {
             id: "SEC-020",
@@ -83,7 +83,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "使用 subprocess.run 的列表参数形式，设置 shell=False",
             fix_example: Some("subprocess.run(['ls', '-la', safe_dir], shell=False)"),
         },
-
         // Path Traversal
         Rule {
             id: "SEC-030",
@@ -95,9 +94,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r"(?:readFile|writeFile|readFileSync|createReadStream|open)\s*\(.*(?:req\.|params\.|query\.|body\.)",
             fix_suggestion: "使用 path.resolve 验证路径，确保在允许的目录范围内",
-            fix_example: Some("const safePath = path.resolve(baseDir, userInput);\nif (!safePath.startsWith(baseDir)) throw new Error('路径越界');"),
+            fix_example: Some(
+                "const safePath = path.resolve(baseDir, userInput);\nif (!safePath.startsWith(baseDir)) throw new Error('路径越界');",
+            ),
         },
-
         // Hardcoded Secrets
         Rule {
             id: "SEC-040",
@@ -106,12 +106,17 @@ pub fn all_rules() -> Vec<Rule> {
             severity: Severity::High,
             cwe_id: Some("CWE-798"),
             owasp: Some("A07:2021-Identification and Authentication Failures"),
-            languages: &[Language::JavaScript, Language::TypeScript, Language::Python, Language::Go, Language::Java],
+            languages: &[
+                Language::JavaScript,
+                Language::TypeScript,
+                Language::Python,
+                Language::Go,
+                Language::Java,
+            ],
             pattern: r#"(?i)(?:password|passwd|secret|api_?key|access_?token|private_?key)\s*[:=]\s*["'][A-Za-z0-9+/=_\-]{8,}"#,
             fix_suggestion: "使用环境变量或密钥管理服务存储敏感信息",
             fix_example: Some("const apiKey = process.env.API_KEY; // 从环境变量读取"),
         },
-
         // Weak Crypto
         Rule {
             id: "SEC-050",
@@ -120,12 +125,17 @@ pub fn all_rules() -> Vec<Rule> {
             severity: Severity::Medium,
             cwe_id: Some("CWE-327"),
             owasp: Some("A02:2021-Cryptographic Failures"),
-            languages: &[Language::JavaScript, Language::TypeScript, Language::Python, Language::Go, Language::Java],
+            languages: &[
+                Language::JavaScript,
+                Language::TypeScript,
+                Language::Python,
+                Language::Go,
+                Language::Java,
+            ],
             pattern: r#"(?i)(?:createHash|hashlib\.)\s*\(\s*["'](?:md5|sha1)["']\)|(?i)MD5\.Create|MessageDigest\.getInstance\s*\(\s*["'](?:MD5|SHA-1)["']\)"#,
             fix_suggestion: "使用 SHA-256 或更强的哈希算法；密码存储使用 bcrypt/scrypt/argon2",
             fix_example: Some("crypto.createHash('sha256').update(data).digest('hex')"),
         },
-
         // Insecure Deserialization
         Rule {
             id: "SEC-060",
@@ -139,7 +149,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "避免 eval/pickle 处理不可信数据；使用 JSON.parse 或 yaml.safe_load",
             fix_example: Some("import yaml\ndata = yaml.safe_load(user_input)  # 安全的 YAML 解析"),
         },
-
         // SSRF
         Rule {
             id: "SEC-070",
@@ -151,9 +160,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r"(?:fetch|axios|request|urllib|requests\.get|requests\.post|http\.get)\s*\(.*(?:req\.|params\.|query\.|body\.|user)",
             fix_suggestion: "验证并白名单过滤用户提供的 URL，禁止访问内网地址",
-            fix_example: Some("const url = new URL(userInput);\nif (!ALLOWED_HOSTS.includes(url.hostname)) throw new Error('不允许的主机');"),
+            fix_example: Some(
+                "const url = new URL(userInput);\nif (!ALLOWED_HOSTS.includes(url.hostname)) throw new Error('不允许的主机');",
+            ),
         },
-
         // JWT Issues
         Rule {
             id: "SEC-080",
@@ -165,9 +175,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r#"(?i)(?:algorithm|algorithms)\s*[:=]\s*\[?\s*["']none["']|jwt\.(?:sign|verify|encode|decode)\s*\(.*(?:["']secret["']|["']password["'])"#,
             fix_suggestion: "使用 RS256 或 ES256 算法，密钥从环境变量读取且足够长",
-            fix_example: Some("jwt.verify(token, process.env.JWT_PUBLIC_KEY, { algorithms: ['RS256'] })"),
+            fix_example: Some(
+                "jwt.verify(token, process.env.JWT_PUBLIC_KEY, { algorithms: ['RS256'] })",
+            ),
         },
-
         // CORS Misconfiguration
         Rule {
             id: "SEC-090",
@@ -176,12 +187,16 @@ pub fn all_rules() -> Vec<Rule> {
             severity: Severity::Medium,
             cwe_id: Some("CWE-942"),
             owasp: Some("A05:2021-Security Misconfiguration"),
-            languages: &[Language::JavaScript, Language::TypeScript, Language::Python, Language::Go],
+            languages: &[
+                Language::JavaScript,
+                Language::TypeScript,
+                Language::Python,
+                Language::Go,
+            ],
             pattern: r#"(?i)(?:Access-Control-Allow-Origin|cors)\s*[:=]\s*["']\*["']|origin\s*:\s*true"#,
             fix_suggestion: "设置明确的 CORS 允许域名白名单，不要使用通配符 *",
             fix_example: Some("app.use(cors({ origin: ['https://your-domain.com'] }))"),
         },
-
         // Prototype Pollution
         Rule {
             id: "SEC-100",
@@ -193,9 +208,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript],
             pattern: r"(?:Object\.assign|_\.merge|_\.extend|_\.defaults|\.prototype\[)",
             fix_suggestion: "使用 Object.create(null) 创建无原型对象，或验证键名不含 __proto__",
-            fix_example: Some("const safe = Object.create(null);\nfor (const [k, v] of Object.entries(input)) {\n  if (k !== '__proto__' && k !== 'constructor') safe[k] = v;\n}"),
+            fix_example: Some(
+                "const safe = Object.create(null);\nfor (const [k, v] of Object.entries(input)) {\n  if (k !== '__proto__' && k !== 'constructor') safe[k] = v;\n}",
+            ),
         },
-
         // Insecure Random
         Rule {
             id: "SEC-110",
@@ -209,7 +225,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "使用 crypto.randomBytes/crypto.randomUUID (Node) 或 secrets 模块 (Python)",
             fix_example: Some("const token = crypto.randomUUID(); // 安全的随机 token"),
         },
-
         // NoSQL Injection
         Rule {
             id: "SEC-120",
@@ -221,9 +236,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript],
             pattern: r"\.find\s*\(\s*\{.*(?:req\.body|req\.query|req\.params)|\.aggregate\s*\(\s*\[.*\$where",
             fix_suggestion: "验证并净化用户输入类型，使用 mongoose 的 schema 验证",
-            fix_example: Some("const id = String(req.params.id); // 强制类型转换\ndb.collection.find({ _id: id })"),
+            fix_example: Some(
+                "const id = String(req.params.id); // 强制类型转换\ndb.collection.find({ _id: id })",
+            ),
         },
-
         // ──────────── V1.1 Extended Rules ────────────
 
         // Open Redirect
@@ -237,9 +253,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r"(?:redirect|res\.redirect|redirect_to|return redirect)\s*\(.*(?:req\.|params\.|query\.|body\.|user|url)",
             fix_suggestion: "验证重定向目标是否在白名单域名内，禁止跳转到外部 URL",
-            fix_example: Some("const url = new URL(target, 'https://your-domain.com');\nif (url.origin !== 'https://your-domain.com') throw new Error('禁止外部重定向');"),
+            fix_example: Some(
+                "const url = new URL(target, 'https://your-domain.com');\nif (url.origin !== 'https://your-domain.com') throw new Error('禁止外部重定向');",
+            ),
         },
-
         // Information Exposure via Error Message
         Rule {
             id: "SEC-140",
@@ -251,9 +268,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r"(?:res\.(?:send|json|status)\s*\(.*(?:err\.stack|error\.stack|traceback)|(?:\.send|\.json)\s*\(\s*(?:err|error)\s*\))",
             fix_suggestion: "只返回通用错误信息给用户，详细错误记录到服务端日志",
-            fix_example: Some("res.status(500).json({ error: 'Internal server error' });\nlogger.error(err.stack); // 服务端日志"),
+            fix_example: Some(
+                "res.status(500).json({ error: 'Internal server error' });\nlogger.error(err.stack); // 服务端日志",
+            ),
         },
-
         // Unsafe Regex (ReDoS)
         Rule {
             id: "SEC-150",
@@ -267,7 +285,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "避免嵌套量词，使用原子组或占有量词，设置超时限制",
             fix_example: Some("// 避免: /(.+)+/\n// 改用: /[^\\s]+/ 或设置匹配超时"),
         },
-
         // Missing Rate Limiting
         Rule {
             id: "SEC-160",
@@ -279,9 +296,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript],
             pattern: r#"(?:app|router)\.\s*(?:post|put)\s*\(\s*["'](?:/login|/signin|/register|/signup|/reset|/forgot)["']"#,
             fix_suggestion: "为敏感端点添加速率限制中间件（如 express-rate-limit）",
-            fix_example: Some("const limiter = rateLimit({ windowMs: 15*60*1000, max: 5 });\napp.post('/login', limiter, loginHandler);"),
+            fix_example: Some(
+                "const limiter = rateLimit({ windowMs: 15*60*1000, max: 5 });\napp.post('/login', limiter, loginHandler);",
+            ),
         },
-
         // Cleartext Storage of Password
         Rule {
             id: "SEC-170",
@@ -293,9 +311,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r#"(?i)(?:password|passwd)\s*[:=]\s*(?:req\.body|request\.|input|params)\[?[."']"#,
             fix_suggestion: "使用 bcrypt/scrypt/argon2 哈希存储密码，永远不要明文存储",
-            fix_example: Some("const hash = await bcrypt.hash(password, 12);\nawait db.users.update({ password: hash });"),
+            fix_example: Some(
+                "const hash = await bcrypt.hash(password, 12);\nawait db.users.update({ password: hash });",
+            ),
         },
-
         // Missing HTTP Security Headers
         Rule {
             id: "SEC-180",
@@ -309,7 +328,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "使用 helmet 中间件设置安全头：X-Frame-Options, CSP, HSTS 等",
             fix_example: Some("app.use(helmet()); // 一行代码设置所有安全头"),
         },
-
         // Insecure Cookie Configuration
         Rule {
             id: "SEC-190",
@@ -321,9 +339,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript],
             pattern: r#"(?:cookie|session)\s*\(\s*\{(?:(?!httpOnly|secure|sameSite).)*\}|(?:httpOnly|secure)\s*:\s*false"#,
             fix_suggestion: "设置 cookie 的 httpOnly, secure, sameSite 属性",
-            fix_example: Some("res.cookie('session', token, {\n  httpOnly: true,\n  secure: true,\n  sameSite: 'strict'\n});"),
+            fix_example: Some(
+                "res.cookie('session', token, {\n  httpOnly: true,\n  secure: true,\n  sameSite: 'strict'\n});",
+            ),
         },
-
         // XML External Entity (XXE)
         Rule {
             id: "SEC-200",
@@ -332,12 +351,18 @@ pub fn all_rules() -> Vec<Rule> {
             severity: Severity::High,
             cwe_id: Some("CWE-611"),
             owasp: Some("A05:2021-Security Misconfiguration"),
-            languages: &[Language::JavaScript, Language::TypeScript, Language::Python, Language::Java],
+            languages: &[
+                Language::JavaScript,
+                Language::TypeScript,
+                Language::Python,
+                Language::Java,
+            ],
             pattern: r"(?:parseXML|xml2js|etree\.parse|DocumentBuilder|SAXParser|XMLReader).*(?:external|resolve|dtd|entity)",
             fix_suggestion: "禁用 XML 解析器的外部实体和 DTD 处理",
-            fix_example: Some("// Node.js: xml2js 默认安全\n// Python: etree.parse(source, parser=etree.XMLParser(resolve_entities=False))"),
+            fix_example: Some(
+                "// Node.js: xml2js 默认安全\n// Python: etree.parse(source, parser=etree.XMLParser(resolve_entities=False))",
+            ),
         },
-
         // Log Injection
         Rule {
             id: "SEC-210",
@@ -349,9 +374,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::JavaScript, Language::TypeScript, Language::Python],
             pattern: r"(?:console\.log|logger\.info|logger\.warn|logger\.error|logging\.info)\s*\(.*(?:req\.body|req\.query|req\.params|request\.|user_input)",
             fix_suggestion: "对用户输入进行净化后再写入日志，过滤换行符和控制字符",
-            fix_example: Some("const safeInput = userInput.replace(/[\\r\\n]/g, '');\nlogger.info(`User action: ${safeInput}`);"),
+            fix_example: Some(
+                "const safeInput = userInput.replace(/[\\r\\n]/g, '');\nlogger.info(`User action: ${safeInput}`);",
+            ),
         },
-
         // Go: SQL Injection
         Rule {
             id: "SEC-300",
@@ -363,9 +389,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::Go],
             pattern: r#"(?:db\.(?:Query|Exec|QueryRow)|\.(?:Query|Exec))\s*\(\s*(?:fmt\.Sprintf|.*\+)"#,
             fix_suggestion: "使用参数化查询：db.Query(\"SELECT * FROM users WHERE id = $1\", id)",
-            fix_example: Some("rows, err := db.Query(\"SELECT * FROM users WHERE id = $1\", userID)"),
+            fix_example: Some(
+                "rows, err := db.Query(\"SELECT * FROM users WHERE id = $1\", userID)",
+            ),
         },
-
         // Go: Command Injection
         Rule {
             id: "SEC-301",
@@ -379,7 +406,6 @@ pub fn all_rules() -> Vec<Rule> {
             fix_suggestion: "验证用户输入，使用白名单，避免将用户输入作为命令参数",
             fix_example: Some("cmd := exec.Command(\"ls\", \"-la\", filepath.Clean(safeDir))"),
         },
-
         // Java: SQL Injection
         Rule {
             id: "SEC-400",
@@ -391,9 +417,10 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::Java],
             pattern: r#"(?:createQuery|createNativeQuery|executeQuery|prepareStatement)\s*\(\s*["'].*\s*\+|Statement\s+.*=.*createStatement"#,
             fix_suggestion: "使用 PreparedStatement 参数化查询",
-            fix_example: Some("PreparedStatement ps = conn.prepareStatement(\"SELECT * FROM users WHERE id = ?\");\nps.setInt(1, userId);"),
+            fix_example: Some(
+                "PreparedStatement ps = conn.prepareStatement(\"SELECT * FROM users WHERE id = ?\");\nps.setInt(1, userId);",
+            ),
         },
-
         // Java: Insecure Deserialization
         Rule {
             id: "SEC-401",
@@ -405,7 +432,9 @@ pub fn all_rules() -> Vec<Rule> {
             languages: &[Language::Java],
             pattern: r"ObjectInputStream|readObject\s*\(\s*\)|XMLDecoder|XStream\.fromXML",
             fix_suggestion: "使用安全的序列化格式（JSON），或配置反序列化白名单",
-            fix_example: Some("// 使用 JSON 替代 Java 序列化\nObjectMapper mapper = new ObjectMapper();\nUser user = mapper.readValue(jsonStr, User.class);"),
+            fix_example: Some(
+                "// 使用 JSON 替代 Java 序列化\nObjectMapper mapper = new ObjectMapper();\nUser user = mapper.readValue(jsonStr, User.class);",
+            ),
         },
     ]
 }

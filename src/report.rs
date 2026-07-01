@@ -6,17 +6,30 @@ pub fn print_terminal_report(result: &ScanResult) {
     let summary = result.summary();
 
     println!();
-    println!("{}", "══════════════════════════════════════════════════════════".bold());
+    println!(
+        "{}",
+        "══════════════════════════════════════════════════════════".bold()
+    );
     println!("{}", "  SecProbe - AI Security Audit Tool".bold().cyan());
-    println!("{}", "══════════════════════════════════════════════════════════".bold());
+    println!(
+        "{}",
+        "══════════════════════════════════════════════════════════".bold()
+    );
 
     println!();
     println!("{}  {}", "Project:".bold(), result.project_path.display());
-    println!("{}  {} / {} scanned", "Files:".bold(), result.scanned_files, result.total_files);
+    println!(
+        "{}  {} / {} scanned",
+        "Files:".bold(),
+        result.scanned_files,
+        result.total_files
+    );
     println!("{}  {} ms", "Duration:".bold(), result.scan_duration_ms);
 
     if !result.languages.is_empty() {
-        let langs: String = result.languages.iter()
+        let langs: String = result
+            .languages
+            .iter()
             .map(|(l, c)| format!("{l}: {c}"))
             .collect::<Vec<_>>()
             .join(", ");
@@ -24,7 +37,10 @@ pub fn print_terminal_report(result: &ScanResult) {
     }
 
     println!();
-    println!("{}", "─── Summary ─────────────────────────────────────────────".dimmed());
+    println!(
+        "{}",
+        "─── Summary ─────────────────────────────────────────────".dimmed()
+    );
     print_severity_bar(&summary);
 
     if result.findings.is_empty() {
@@ -35,10 +51,13 @@ pub fn print_terminal_report(result: &ScanResult) {
     }
 
     println!();
-    println!("{}", "─── Findings ────────────────────────────────────────────".dimmed());
+    println!(
+        "{}",
+        "─── Findings ────────────────────────────────────────────".dimmed()
+    );
 
     let mut sorted = result.findings.clone();
-    sorted.sort_by(|a, b| severity_order(a.severity).cmp(&severity_order(b.severity)));
+    sorted.sort_by_key(|a| severity_order(a.severity));
 
     for (i, f) in sorted.iter().enumerate() {
         println!();
@@ -83,7 +102,10 @@ pub fn print_terminal_report(result: &ScanResult) {
     }
 
     println!();
-    println!("{}", "══════════════════════════════════════════════════════════".bold());
+    println!(
+        "{}",
+        "══════════════════════════════════════════════════════════".bold()
+    );
     println!(
         "  Total: {} issues ({} critical, {} high, {} medium, {} low)",
         summary.total.to_string().bold(),
@@ -92,12 +114,110 @@ pub fn print_terminal_report(result: &ScanResult) {
         summary.medium.to_string().cyan(),
         summary.low.to_string().dimmed()
     );
-    println!("{}", "══════════════════════════════════════════════════════════".bold());
+    println!(
+        "{}",
+        "══════════════════════════════════════════════════════════".bold()
+    );
     println!();
 }
 
 pub fn export_json(result: &ScanResult) -> String {
     serde_json::to_string_pretty(result).unwrap_or_default()
+}
+
+/// SARIF 2.1.0 output — for GitHub/GitLab security tab integration
+pub fn export_sarif(result: &ScanResult) -> String {
+    let rules: Vec<serde_json::Value> = {
+        let mut seen = std::collections::HashSet::new();
+        result
+            .findings
+            .iter()
+            .filter(|f| seen.insert(f.rule_id.clone()))
+            .map(|f| {
+                serde_json::json!({
+                    "id": f.rule_id,
+                    "name": f.title,
+                    "shortDescription": { "text": f.title },
+                    "fullDescription": { "text": f.description },
+                    "helpUri": f.cwe_id.as_ref().map(|c| {
+                        let num = c.trim_start_matches("CWE-");
+                        format!("https://cwe.mitre.org/data/definitions/{num}.html")
+                    }).unwrap_or_default(),
+                    "properties": {
+                        "tags": [
+                            f.cwe_id.clone().unwrap_or_default(),
+                            f.owasp_category.clone().unwrap_or_default()
+                        ],
+                        "security-severity": security_severity(f.severity)
+                    },
+                    "defaultConfiguration": { "level": sarif_level(f.severity) }
+                })
+            })
+            .collect()
+    };
+
+    let results: Vec<serde_json::Value> = result
+        .findings
+        .iter()
+        .map(|f| {
+            serde_json::json!({
+                "ruleId": f.rule_id,
+                "level": sarif_level(f.severity),
+                "message": { "text": format!("{} — {}", f.title, f.fix_suggestion) },
+                "locations": [{
+                    "physicalLocation": {
+                        "artifactLocation": { "uri": f.file.display().to_string() },
+                        "region": {
+                            "startLine": f.line,
+                            "startColumn": f.column,
+                            "snippet": { "text": f.code_snippet }
+                        }
+                    }
+                }],
+                "properties": {
+                    "confidence": f.confidence,
+                    "cwe": f.cwe_id.clone().unwrap_or_default(),
+                    "owasp": f.owasp_category.clone().unwrap_or_default()
+                }
+            })
+        })
+        .collect();
+
+    let sarif = serde_json::json!({
+        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": "SecProbe",
+                    "version": env!("CARGO_PKG_VERSION"),
+                    "informationUri": "https://github.com/Claudate/secprobe",
+                    "rules": rules
+                }
+            },
+            "results": results
+        }]
+    });
+
+    serde_json::to_string_pretty(&sarif).unwrap_or_default()
+}
+
+fn sarif_level(sev: Severity) -> &'static str {
+    match sev {
+        Severity::Critical | Severity::High => "error",
+        Severity::Medium => "warning",
+        Severity::Low | Severity::Info => "note",
+    }
+}
+
+fn security_severity(sev: Severity) -> &'static str {
+    match sev {
+        Severity::Critical => "9.0",
+        Severity::High => "7.0",
+        Severity::Medium => "5.0",
+        Severity::Low => "3.0",
+        Severity::Info => "1.0",
+    }
 }
 
 pub fn export_html(result: &ScanResult) -> String {
@@ -123,7 +243,9 @@ pub fn export_html(result: &ScanResult) -> String {
     html.push_str(".finding { background: #1e293b; border-radius: 8px; padding: 1.2rem; margin: 0.8rem 0; border-left: 4px solid; }\n");
     html.push_str(".finding.sev-critical { border-color: #ef4444; } .finding.sev-high { border-color: #f59e0b; }\n");
     html.push_str(".finding.sev-medium { border-color: #3b82f6; } .finding.sev-low { border-color: #6b7280; }\n");
-    html.push_str(".finding .title { font-weight: 600; font-size: 1rem; margin-bottom: 0.3rem; }\n");
+    html.push_str(
+        ".finding .title { font-weight: 600; font-size: 1rem; margin-bottom: 0.3rem; }\n",
+    );
     html.push_str(".finding .loc { font-size: 0.85rem; color: #64748b; }\n");
     html.push_str(".badge { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; font-weight: 600; }\n");
     html.push_str(".badge-critical { background: #ef4444; color: white; } .badge-high { background: #f59e0b; color: #1e293b; }\n");
@@ -145,13 +267,16 @@ pub fn export_html(result: &ScanResult) -> String {
     html.push_str(&format!("<div class=\"stat critical\"><div class=\"num\">{}</div><div class=\"label\">Critical</div></div>\n", summary.critical));
     html.push_str(&format!("<div class=\"stat high\"><div class=\"num\">{}</div><div class=\"label\">High</div></div>\n", summary.high));
     html.push_str(&format!("<div class=\"stat medium\"><div class=\"num\">{}</div><div class=\"label\">Medium</div></div>\n", summary.medium));
-    html.push_str(&format!("<div class=\"stat low\"><div class=\"num\">{}</div><div class=\"label\">Low</div></div>\n", summary.low));
+    html.push_str(&format!(
+        "<div class=\"stat low\"><div class=\"num\">{}</div><div class=\"label\">Low</div></div>\n",
+        summary.low
+    ));
     html.push_str("</div>\n");
 
     html.push_str("<h2>Findings</h2>\n");
 
     let mut sorted = result.findings.clone();
-    sorted.sort_by(|a, b| severity_order(a.severity).cmp(&severity_order(b.severity)));
+    sorted.sort_by_key(|a| severity_order(a.severity));
 
     for f in &sorted {
         let sev_class = match f.severity {
@@ -176,12 +301,22 @@ pub fn export_html(result: &ScanResult) -> String {
         if let (Some(cwe), Some(owasp)) = (&f.cwe_id, &f.owasp_category) {
             html.push_str(&format!("<div class=\"loc\">{cwe} | {owasp}</div>\n"));
         }
-        html.push_str(&format!("<div class=\"loc\">{}:{}</div>\n", f.file.display(), f.line));
+        html.push_str(&format!(
+            "<div class=\"loc\">{}:{}</div>\n",
+            f.file.display(),
+            f.line
+        ));
         html.push_str(&format!("<pre>{}</pre>\n", html_escape(&f.code_snippet)));
-        html.push_str(&format!("<div class=\"fix\">Fix: {}</div>\n", html_escape(&f.fix_suggestion)));
+        html.push_str(&format!(
+            "<div class=\"fix\">Fix: {}</div>\n",
+            html_escape(&f.fix_suggestion)
+        ));
 
         if let Some(ref fix) = f.fix_code {
-            html.push_str(&format!("<pre style=\"border-left:3px solid #10b981;\">{}</pre>\n", html_escape(fix)));
+            html.push_str(&format!(
+                "<pre style=\"border-left:3px solid #10b981;\">{}</pre>\n",
+                html_escape(fix)
+            ));
         }
         html.push_str("</div>\n");
     }

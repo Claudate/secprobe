@@ -9,9 +9,20 @@ use crate::rules::{all_rules, compile_rule};
 use crate::types::*;
 
 const SKIP_DIRS: &[&str] = &[
-    "node_modules", ".git", "target", "__pycache__", ".venv",
-    "vendor", "dist", "build", ".next", ".nuxt", "coverage",
-    ".idea", ".vscode", ".cursor",
+    "node_modules",
+    ".git",
+    "target",
+    "__pycache__",
+    ".venv",
+    "vendor",
+    "dist",
+    "build",
+    ".next",
+    ".nuxt",
+    "coverage",
+    ".idea",
+    ".vscode",
+    ".cursor",
 ];
 
 const MAX_FILE_SIZE: u64 = 1_048_576; // 1 MB
@@ -40,12 +51,15 @@ pub fn scan_project(project_path: &Path) -> ScanResult {
         }
     }
     let mut languages: Vec<_> = lang_counts.into_iter().collect();
-    languages.sort_by(|a, b| b.1.cmp(&a.1));
+    languages.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     ScanResult {
         project_path: project_path.to_path_buf(),
         total_files,
-        scanned_files: files.iter().filter(|(_, l)| *l != Language::Unknown).count(),
+        scanned_files: files
+            .iter()
+            .filter(|(_, l)| *l != Language::Unknown)
+            .count(),
         findings,
         scan_duration_ms: start.elapsed().as_millis() as u64,
         languages,
@@ -64,7 +78,11 @@ fn collect_files(root: &Path) -> Vec<(PathBuf, Language)> {
         })
         .filter_map(|e| e.ok())
         .filter(|e| e.file_type().is_file())
-        .filter(|e| e.metadata().map(|m| m.len() < MAX_FILE_SIZE).unwrap_or(false))
+        .filter(|e| {
+            e.metadata()
+                .map(|m| m.len() < MAX_FILE_SIZE)
+                .unwrap_or(false)
+        })
         .map(|e| {
             let ext = e.path().extension().and_then(|s| s.to_str()).unwrap_or("");
             let lang = Language::from_extension(ext);
@@ -102,7 +120,11 @@ fn scan_file(
                     .enumerate()
                     .map(|(i, l)| {
                         let num = snippet_start + i + 1;
-                        let marker = if snippet_start + i == line_idx { ">" } else { " " };
+                        let marker = if snippet_start + i == line_idx {
+                            ">"
+                        } else {
+                            " "
+                        };
                         format!("{marker} {num:4} | {l}")
                     })
                     .collect::<Vec<_>>()

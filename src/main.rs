@@ -64,13 +64,21 @@ fn main() {
             let mut result = scanner::scan_project(&path);
 
             let min_sev = parse_severity(&min_severity);
-            result.findings.retain(|f| severity_value(f.severity) <= severity_value(min_sev));
+            result
+                .findings
+                .retain(|f| severity_value(f.severity) <= severity_value(min_sev));
 
             if llm {
                 if let Some(config) = llm::LlmConfig::from_env() {
-                    eprintln!("Running LLM deep analysis ({:?} / {})...", config.provider, config.model);
+                    eprintln!(
+                        "Running LLM deep analysis ({:?} / {})...",
+                        config.provider, config.model
+                    );
                     let analyses = llm::analyze_findings(&result.findings, &path, &config);
-                    eprintln!("LLM analysis complete: {} findings analyzed", analyses.len());
+                    eprintln!(
+                        "LLM analysis complete: {} findings analyzed",
+                        analyses.len()
+                    );
                 } else {
                     eprintln!("Warning: --llm flag set but no API key found.");
                     eprintln!("Set one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, DEEPSEEK_API_KEY");
@@ -94,11 +102,31 @@ fn main() {
                     println!("HTML report saved to: {}", out_path.display());
 
                     #[cfg(target_os = "macos")]
-                    { let _ = std::process::Command::new("open").arg(&out_path).spawn(); }
+                    {
+                        let _ = std::process::Command::new("open").arg(&out_path).spawn();
+                    }
                     #[cfg(target_os = "windows")]
-                    { let _ = std::process::Command::new("cmd").args(["/c", "start"]).arg(&out_path).spawn(); }
+                    {
+                        let _ = std::process::Command::new("cmd")
+                            .args(["/c", "start"])
+                            .arg(&out_path)
+                            .spawn();
+                    }
                     #[cfg(target_os = "linux")]
-                    { let _ = std::process::Command::new("xdg-open").arg(&out_path).spawn(); }
+                    {
+                        let _ = std::process::Command::new("xdg-open")
+                            .arg(&out_path)
+                            .spawn();
+                    }
+                }
+                "sarif" => {
+                    let sarif = report::export_sarif(&result);
+                    if let Some(out_path) = output {
+                        fs::write(&out_path, &sarif).expect("Failed to write SARIF report");
+                        println!("SARIF report saved to: {}", out_path.display());
+                    } else {
+                        println!("{sarif}");
+                    }
                 }
                 _ => {
                     report::print_terminal_report(&result);

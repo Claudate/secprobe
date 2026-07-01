@@ -112,7 +112,14 @@ impl ScanResult {
             }
         }
 
-        ScanSummary { critical, high, medium, low, info, total: self.findings.len() as u32 }
+        ScanSummary {
+            critical,
+            high,
+            medium,
+            low,
+            info,
+            total: self.findings.len() as u32,
+        }
     }
 }
 

@@ -91,6 +91,7 @@ cargo build --release
 - **终端** — 彩色输出，含代码片段和修复建议
 - **HTML** — 暗色主题专业报告，自动在浏览器打开
 - **JSON** — 机器可读格式，便于 CI/CD 集成
+- **SARIF 2.1.0** — GitHub/GitLab 安全标签集成
 
 ### 性能
 

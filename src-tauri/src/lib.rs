@@ -153,7 +153,11 @@ async fn select_folder(app: tauri::AppHandle) -> Option<String> {
 
 /// Re-scan the project and export the report (json/html) via a native save dialog.
 #[tauri::command]
-async fn export_report(app: tauri::AppHandle, path: String, format: String) -> Result<String, String> {
+async fn export_report(
+    app: tauri::AppHandle,
+    path: String,
+    format: String,
+) -> Result<String, String> {
     let project_path = PathBuf::from(&path);
     if !project_path.exists() {
         return Err(format!("Path '{path}' does not exist"));
